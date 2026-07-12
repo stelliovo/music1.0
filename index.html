@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音乐术语记忆大师 - 终极版</title>
+    <style>
+        :root {
+            --primary-color: #6366f1; /* 靛蓝色 */
+            --secondary-color: #4f46e5;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+            --text-sub: #6b7280;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        /* 欢迎/设置界面 */
+        #setup-screen, #summary-screen {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        h1 { margin-bottom: 20px; color: var(--primary-color); font-size: 24px; }
+        p { color: var(--text-sub); margin-bottom: 20px; line-height: 1.6; }
+
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            border: none;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+            font-weight: 600;
+        }
+
+        button:active { transform: scale(0.98); }
+        
+        .btn-primary { background-color: var(--primary-color); color: white; }
+        .btn-outline { background-color: transparent; border: 2px solid var(--primary-color); color: var(--primary-color); }
+        .btn-danger { background-color: var(--danger-color); color: white; }
+        .btn-success { background-color: var(--success-color); color: white; }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 2px solid #e5e7eb;
+            margin-bottom: 15px;
+            font-size: 16px;
+            background: white;
+        }
+
+        /* 学习界面 */
+        #study-screen { display: none; }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background-color: #e5e7eb;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: var(--text-sub);
+            margin-bottom: 10px;
+        }
+
+        /* 卡片样式 */
+        .card-scene {
+            perspective: 1000px;
+            width: 100%;
+            height: 300px;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .card.is-flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 20px;
+            background: var(--card-bg);
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .card-front {
+            z-index: 2;
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+            background-color: #fdfdfd;
+        }
+
+        .term-category {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .term-main {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 5px;
+        }
+        
+        .term-abbr {
+            font-size: 18px;
+            color: var(--text-sub);
+            font-style: italic;
+            font-weight: normal;
+        }
+
+        .term-meaning {
+            font-size: 24px;
+            color: var(--text-main);
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .hint-text {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #9ca3af;
+        }
+
+        /* 控制按钮区域 */
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .control-btn {
+            flex: 1;
+            padding: 15px;
+            border-radius: 15px;
+            font-size: 16px;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-wrong { background-color: var(--danger-color); }
+        .btn-correct { background-color: var(--success-color); }
+        
+        .key-hint {
+            font-size: 10px;
+            opacity: 0.8;
+            margin-top: 4px;
+            font-weight: normal;
+        }
+
+        /* 激励语录 */
+        .motivation-toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .show-toast { opacity: 1; }
+
+        /* 错题本标记 */
+        .review-badge {
+            background-color: var(--warning-color);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-bottom: 10px;
+            display: none;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <!-- 设置界面 -->
+    <div id="setup-screen">
+        <h1>🎵 音乐术语记忆大师</h1>
+        <p>包含速度、力度、表情、演奏法等全分类。<br>支持缩写强化记忆与智能错题复习。</p>
+        
+        <label style="display:block; text-align:left; font-weight:bold; margin-bottom:5px;">选择背诵范围：</label>
+        <select id="category-select">
+            <option value="all">全部术语 (大满贯)</option>
+            <option value="tempo">速度与节奏 (Tempo)</option>
+            <option value="dynamics">力度 (Dynamics)</option>
+            <option value="expression">表情与风格 (Expression)</option>
+            <option value="technique">演奏法 (Technique)</option>
+            <option value="forms">曲体 (Forms)</option>
+            <option value="degrees">程度与其他 (Degrees)</option>
+        </select>
+
+        <div class="btn-group">
+            <button class="btn-primary" onclick="startStudy('new')">开始学习新词</button>
+            <button class="btn-outline" id="review-btn" onclick="startStudy('review')" style="display:none;">复习错题本 (<span id="error-count">0</span>)</button>
+            <button class="btn-danger" onclick="clearData()" style="font-size: 12px; padding: 8px;">清空所有进度</button>
+        </div>
+    </div>
+
+    <!-- 学习界面 -->
+    <div id="study-screen">
+        <div class="stats">
+            <span id="mode-label">学习模式</span>
+            <span id="progress-text">0 / 0</span>
+        </div>
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+
+        <div class="card-scene" onclick="flipCard()">
+            <div class="card" id="flashcard">
+                <div class="card-face card-front">
+                    <div class="review-badge" id="review-badge">错题复习中</div>
+                    <div class="term-category" id="card-category">Category</div>
+                    <div class="term-main" id="card-term">Term</div>
+                    <div class="hint-text">点击翻转查看释义</div>
+                </div>
+                <div class="card-face card-back">
+                    <div class="term-category" id="card-category-back">Category</div>
+                    <div class="term-main" id="card-term-back">Term</div>
+                    <div class="term-meaning" id="card-meaning">Meaning</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="control-btn btn-wrong" onclick="handleAnswer(false)">
+                没记住
+                <span class="key-hint">(← 左键)</span>
+            </button>
+            <button class="control-btn btn-correct" onclick="handleAnswer(true)">
+                记住了
+                <span class="key-hint">(→ 右键 / 空格)</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 结算界面 -->
+    <div id="summary-screen" style="display:none;">
+        <h1>🎉 本轮完成！</h1>
+        <p id="summary-text">太棒了，你的大脑正在构建新的神经突触！</p>
+        <div class="btn-group">
+            <button class="btn-primary" onclick="location.reload()">返回主页</button>
+            <button class="btn-outline" id="review-now-btn" onclick="startStudy('review')" style="display:none;">立即复习错题</button>
+        </div>
+    </div>
+
+</div>
+
+<!-- 激励语录弹窗 -->
+<div class="motivation-toast" id="toast">加油！</div>
+
+<script>
+    // --- 1. 核心数据库 (已根据你的图片整理并格式化) ---
+    const rawData = [
+        // === 速度 (Tempo) ===
+        { t: "Grave", m: "庄板 (沉重、庄严、缓慢地)", c: "tempo" },
+        { t: "Largo", m: "广板 (慢速、宽广地)", c: "tempo" },
+        { t: "Lento", m: "慢板", c: "tempo" },
+        { t: "Adagio", m: "柔板 (徐缓、从容地)", c: "tempo" },
+        { t: "Larghetto", m: "小广板 (稍缓慢地)", c: "tempo" },
+        { t: "Andante", m: "行板 (稍慢、步行速度)", c: "tempo" },
+        { t: "Andantino", m: "小行板 (比行板稍快)", c: "tempo" },
+        { t: "Moderato", m: "中板 (中等速度)", c: "tempo" },
+        { t: "Allegretto", m: "小快板 (稍快)", c: "tempo" },
+        { t: "Allegro", m: "快板 (快速地)", c: "tempo" },
+        { t: "Presto", m: "急板 (急速)", c: "tempo" },
+        { t: "Prestissimo", m: "最急板 (极快速地)", c: "tempo" },
+        { t: "A tempo", a: "a tem", m: "回原速", c: "tempo" },
+        { t: "Accelerando", a: "accel.", m: "渐快", c: "tempo" },
+        { t: "Rallentando", a: "rall", m: "渐慢 (声乐作品常用)", c: "tempo" },
+        { t: "Ritardando", a: "rit. / ritard", m: "渐慢 (钢琴作品常用)", c: "tempo" },
+        { t: "Ritenuto", a: "riten", m: "突慢 (速度立刻减慢)", c: "tempo" },
+        { t: "Vivace", m: "快速而有生气地", c: "tempo" },
+        { t: "Ad libitum", a: "ad lib.", m: "速度自由 (或散板)", c: "tempo" },
+        { t: "Affrettando", m: "再快一些", c: "tempo" },
+        { t: "Come prima", m: "和开头一样的速度", c: "tempo" },
+        { t: "Doppio movimento", m: "加快一倍", c: "tempo" },
+        { t: "In tempo", a: "in tem", m: "按照原来的速度", c: "tempo" },
+        { t: "Molto mosso", m: "很快地", c: "tempo" },
+        { t: "Più mosso", m: "转快、更快地", c: "tempo" },
+        { t: "Poco meno mosso", m: "稍转慢", c: "tempo" },
+        { t: "Poco mosso", m: "稍快", c: "tempo" },
+        { t: "Poco più mosso", m: "稍转快", c: "tempo" },
+        { t: "Precipitando", m: "急速地加快", c: "tempo" },
+        { t: "Senza accel", m: "不要渐快、适中速度", c: "tempo" },
+        { t: "Sostenuto", m: "保持着、音持续的", c: "tempo" },
+        { t: "Stretto", m: "紧缩 (通常指赋格中的加速)", c: "tempo" },
+        { t: "Tempo primo", m: "原来的速度", c: "tempo" },
+        { t: "Tempo rubato", m: "自由的速度 (偷时间)", c: "tempo" },
+        { t: "Allargando", a: "Allarg.", m: "渐慢渐强、渐宽广", c: "tempo" },
+        { t: "Mancando", a: "Manc.", m: "渐慢渐弱、渐消失", c: "tempo" },
+        { t: "Stringendo", a: "Strin", m: "渐快同时渐强", c: "temp
