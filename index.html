@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音乐术语记忆大师 - 完整版</title>
+    <style>
+        :root { --primary: #6366f1; --success: #10b981; --danger: #ef4444; --bg: #f3f4f6; --card: #ffffff; --text: #1f2937; --sub: #6b7280; }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        body { font-family: sans-serif; background: var(--bg); min-height: 100vh; display: flex; justify-content: center; align-items: center; color: var(--text); padding: 20px; }
+        .container { width: 100%; max-width: 450px; background: var(--card); border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); overflow: hidden; min-height: 550px; display: flex; flex-direction: column; position: relative; }
+        .header { padding: 20px; text-align: center; border-bottom: 1px solid #eee; font-size: 1.2rem; font-weight: bold; color: var(--primary); }
+        .content { flex: 1; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .hidden { display: none !important; }
+        .btn { border: none; padding: 14px; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; width: 100%; margin-bottom: 10px; transition: 0.2s; }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+        .btn-success { background: var(--success); color: white; flex: 1; }
+        .btn-danger { background: var(--danger); color: white; flex: 1; }
+        .cat-btn { background: #f8fafc; border: 2px solid #e2e8f0; color: var(--text); }
+        .cat-btn.active { border-color: var(--primary); background: #eef2ff; color: var(--primary); }
+        
+        /* 卡片样式 */
+        .flashcard { width: 100%; height: 280px; perspective: 1000px; cursor: pointer; margin-bottom: 20px; }
+        .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 16px; }
+        .flashcard.flipped .card-inner { transform: rotateY(180deg); }
+        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 16px; background: white; padding: 20px; text-align: center; }
+        .card-front { border: 2px solid var(--primary); }
+        .card-back { background: var(--primary); color: white; transform: rotateY(180deg); }
+        .term-text { font-size: 2rem; font-weight: bold; margin-bottom: 10px; }
+        .abbr-text { font-size: 1.2rem; opacity: 0.8; font-style: italic; }
+        .meaning-text { font-size: 1.8rem; font-weight: bold; }
+        
+        /* 进度与提示 */
+        .progress-bar { width: 100%; height: 6px; background: #eee; border-radius: 3px; margin-bottom: 20px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--success); width: 0%; transition: width 0.3s; }
+        .toast { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 10; white-space: nowrap; }
+        .controls { display: flex; gap: 10px; width: 100%; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">🎵 音乐术语记忆大师</div>
+    <div id="toast" class="toast">贝多芬为你鼓掌！</div>
+
+    <!-- 1. 首页 -->
+    <div id="page-home" class="content">
+        <p style="margin-bottom: 15px; color: var(--sub);">请选择背诵范围：</p>
+        <button class="btn cat-btn active" onclick="setMode('all', this)">📚 全部通关</button>
+        <button class="btn cat-btn" onclick="setMode('top', this)">⬆️ 上半部分 (速度/力度)</button>
+        <button class="btn cat-btn" onclick="setMode('bottom', this)">⬇️ 下半部分 (表情/演奏)</button>
+        <button class="btn btn-primary" style="margin-top: 10px;" onclick="startStudy()">🚀 开始学习</button>
+        <div style="margin-top:15px; font-size:0.9rem; color:#999;">当前错题本：<span id="error-count">0</span> 个</div>
+    </div>
+
+    <!-- 2. 学习页 -->
+    <div id="page-study" class="content hidden">
+        <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
+        <div class="flashcard" onclick="flipCard()">
+            <div class="card-inner">
+                <div class="card-face card-front">
+                    <div id="card-term" class="term-text">Term</div>
+                    <div id="card-abbr" class="abbr-text"></div>
+                    <div style="margin-top:20px; font-size: 0.8rem; color:#999;">(点击翻转)</div>
+                </div>
+                <div class="card-face card-back">
+                    <div id="card-meaning" class="meaning-text">Meaning</div>
+                </div>
+            </div>
+        </div>
+        <div class="controls">
+            <button class="btn btn-danger" onclick="handleResult(false)">❌ 不认识</button>
+            <button class="btn btn-success" onclick="handleResult(true)">✅ 认识</button>
+        </div>
+        <button class="btn btn-outline" style="margin-top: 15px; padding: 8px;" onclick="goHome()">🏠 返回主页</button>
+    </div>
+
+    <!-- 3. 结算页 -->
+    <div id="page-result" class="content hidden">
+        <h2 style="color: var(--primary); margin-bottom: 20px;">🎉 本轮完成！</h2>
+        <p id="result-msg" style="margin-bottom: 30px; color: var(--sub);"></p>
+        <button class="btn btn-primary" onclick="retryWrong()">🔄 只练错题</button>
+        <button class="btn btn-outline" onclick="goHome()">🏠 返回主页</button>
+    </div>
+</div>
+
+<script>
+    // 1. 词库数据
+    const rawData = [
+        { t: "Grave", m: "庄板 (极慢)", c: "top" }, { t: "Largo", m: "广板 (很慢)", c: "top" },
+        { t: "Lento", m: "慢板", c: "top" }, { t: "Adagio", m: "柔板", c: "top" },
+        { t: "Andante", m: "行板", c: "top" }, { t: "Moderato", m: "中板", c: "top" },
+        { t: "Allegretto", m: "小快板", c: "top" }, { t: "Allegro", m: "快板", c: "top" },
+        { t: "Vivace", m: "甚快板", c: "top" }, { t: "Presto", m: "急板", c: "top" },
+        { t: "Accelerando", a: "accel.", m: "渐快", c: "top" }, { t: "Ritardando", a: "rit.", m: "渐慢", c: "top" },
+        { t: "A tempo", m: "恢复原速", c: "top" }, { t: "Rubato", m: "节奏自由", c: "top" },
+        { t: "fff", m: "最强", c: "top" }, { t: "ff", m: "很强", c: "top" },
+        { t: "f", m: "强 (Forte)", c: "top" }, { t: "mf", m: "中强", c: "top" },
+        { t: "mp", m: "中弱", c: "top" }, { t: "p", m: "弱 (Piano)", c: "top" },
+        { t: "pp", m: "很弱", c: "top" }, { t: "Crescendo", a: "cresc.", m: "渐强", c: "top" },
+        { t: "Diminuendo", a: "dim.", m: "渐弱", c: "top" }, { t: "Sforzando", a: "sfz", m: "特强", c: "top" },
+        { t: "Agitato", m: "激动、不安地", c: "bottom" }, { t: "Animato", m: "生动活泼地", c: "bottom" },
+        { t: "Appassionato", m: "热情地", c: "bottom" }, { t: "Cantabile", m: "如歌地", c: "bottom" },
+        { t: "Dolce", m: "柔和地", c: "bottom" }, { t: "Espressivo", m: "有表情地", c: "bottom" },
+        { t: "Maestoso", m: "庄严地", c: "bottom" }, { t: "Brillante", m: "光辉地", c: "bottom" },
+        { t: "Legato", m: "连奏", c: "bottom" }, { t: "Staccato", m: "断奏", c: "bottom" },
+        { t: "Molto", m: "很、非常", c: "bottom" }, { t: "Poco", m: "一点点", c: "bottom" },
+        { t: "Assai", m: "非常", c: "bottom" }
+    ];
+
+    // 2. 幽默语录
+    const quotes = {
+        flip: ["贝多芬听了都想给你鼓掌 👏", "莫扎特说：这题我会！", "肖邦在天堂为你点赞 ✨"],
+        pass: ["太棒了！脑子转得比急板还快！🚀", "Crescendo！你的记忆力在渐强！", "Bravo！直接 Prestissimo 过关！"],
+        fail: ["没关系，莫扎特小时候也背不下来 😂", "错题本+1，下次一定拿下！", "别慌，Rubato 一下，给自己点时间~"]
+    };
+
+    // 3. 状态变量
+    let currentMode = 'all';
+    let queue = [];
+    let wrongQueue = [];
+    let isFlipped = false;
+    let totalInRound = 0;
+    let passedCount = 0;
+
+    // 4. DOM 元素
+    const ui = {
+        home: document.getElementById('page-home'),
+        study: document.getElementById('page-study'),
+        result: document.getElementById('page-result'),
+        toast: document.getElementById('toast'),
+        card: document.querySelector('.flashcard'),
+        term: document.getElementById('card-term'),
+        abbr: document.getElementById('card-abbr'),
+        meaning: document.getElementById('card-meaning'),
+        progress: document.getElementById('progressFill'),
+        errorCount: document.getElementById('error-count'),
+        resultMsg: document.getElementById('result-msg'),
+        catBtns: document.querySelectorAll('.cat-btn')
+    };
+
+    // 5. 核心功能函数
+    function setMode(mode, btnElement) {
+        currentMode = mode;
+        ui.catBtns.forEach(btn => btn.classList.remove('active'));
+        if(btnElement) btnElement.classList.add('active');
+    }
+
+    function showToast(type) {
+        const list = quotes[type];
+        ui.toast.textContent = list[Math.floor(Math.random() * list.length)];
+        ui.toast.style.opacity = 1;
+        setTimeout(() => { ui.toast.style.opacity = 0; }, 2000);
+    }
+
+    function shuffleArray(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+    }
+
+    function startStudy() {
+        let sourceData = [];
+        if (currentMode === 'all') sourceData = [...rawData];
+        else sourceData = rawData.filter(d => d.c === currentMode);
+
+        shuffleArray(sourceData);
+        queue = sourceData;
+        wrongQueue = [];
+        totalInRound = queue.length;
+        passedCount = 0;
+        isFlipped = false;
+        ui.card.classList.remove('flipped');
+
+        ui.home.classList.add('hidden');
+        ui.result.classList.add('hidden');
+        ui.study.classList.remove('hidden');
+        loadNextCard();
+        showToast('flip');
+    }
+
+    function loadNextCard() {
+        if (queue.length === 0) { showResult(); return; }
+        const item = queue[0];
+        ui.term.textContent = item.t;
+        ui.abbr.textContent = item.a ? `(${item.a})` : '';
+        ui.meaning.textContent = item.m;
+        ui.progress.style.width = `${(passedCount / totalInRound) * 100}%`;
+    }
+
+    function flipCard() {
+        isFlipped = !isFlipped;
+        ui.card.classList.toggle('flipped');
+        if (isFlipped) showToast('flip');
+    }
+
+    function handleResult(known) {
+        if (!isFlipped) return; 
+        const currentItem = queue.shift();
+        if (known) { passedCount++; showToast('pass'); }
+        else { wrongQueue.push(currentItem); showToast('fail'); }
+        isFlipped = false;
+        ui.card.classList.remove('flipped');
+        loadNextCard();
+    }
+
+    function showResult() {
+        ui.study.classList.add('hidden');
+        ui.result.classList.remove('hidden');
+        ui.progress.style.width = '100%';
+        ui.errorCount.textContent = wrongQueue.length;
+        
+        if (wrongQueue.length === 0) {
+            ui.resultMsg.textContent = "🎉 太完美了！全部掌握，你就是下一个指挥家！";
+        } else {
+            ui.resultMsg.textContent = `本轮掌握 ${passedCount} 个，还有 ${wrongQueue.length} 个需要复习哦！`;
+        }
+    }
+
+    function retryWrong() {
+        if (wrongQueue.length === 0) { alert("错题本是空的，真棒！"); goHome(); return; }
+        queue = [...wrongQueue];
+        wrongQueue = [];
+        totalInRound = queue.length;
+        passedCount = 0;
+        isFlipped = false;
+        ui.card.classList.remove('flipped');
+        ui.result.classList.add('hidden');
+        ui.study.classList.remove('hidden');
+        loadNextCard();
+        showToast('flip');
+    }
+
+    function goHome() {
+        ui.study.classList.add('hidden');
+        ui.result.classList.add('hidden');
+        ui.home.classList.remove('hidden');
+        ui.errorCount.textContent = wrongQueue.length;
+    }
+</script>
+</body>
+</html>
